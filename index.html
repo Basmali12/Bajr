@@ -40,9 +40,7 @@ body {
   animation: pulseIcon 2s infinite;
 }
 
-.top-buttons button:hover {
-  background: #00ccaa;
-}
+.top-buttons button:hover { background: #00ccaa; }
 
 @keyframes pulseIcon {
   0% { transform: scale(1); opacity:0.8; }
@@ -172,18 +170,23 @@ button:hover { background: #00ccaa; }
 
 <div class="chat-box">
   <h2>دردشة مع الذكاء الاصطناعي</h2>
+  
   <textarea id="message" placeholder="اكتب رسالتك هنا..."></textarea>
   <button id="sendBtn">إرسال</button>
+
+  <!-- الرد يظهر أسفل زر الإرسال مباشرة -->
+  <div class="response" id="responseBox" style="display:none;">
+    <button class="copy-btn" onclick="copyResponse()">نسخ الرد</button>
+    <span id="loadingIcon" style="margin-left:10px;"></span>
+  </div>
+
   <button onclick="clearChat()">🧹 مسح المحادثة</button>
 
+  <!-- أدوات التحويل تبقى أسفل الرد -->
   <div class="tool-buttons">
     <button onclick="showMaintenance('image')">🖼️ تحويل النص إلى صورة</button>
     <button onclick="showMaintenance('video')">🎥 تحويل النص إلى فيديو</button>
     <button onclick="showMaintenance('app')">📱 إنشاء تطبيق</button>
-  </div>
-
-  <div class="response" id="responseBox" style="display:none;">
-    <button class="copy-btn" onclick="copyResponse()">نسخ الرد</button>
   </div>
 
   <div class="response" id="maintenanceBox" style="display:none;"></div>
@@ -210,7 +213,7 @@ btnAudio.addEventListener('click', () => {
   }
 });
 
-// الدردشة
+// الدردشة مع عد تنازلي
 const sendBtn = document.getElementById("sendBtn");
 const responseBox = document.getElementById("responseBox");
 const maintenanceBox = document.getElementById("maintenanceBox");
@@ -226,7 +229,18 @@ sendBtn.addEventListener("click", async function () {
   }
 
   responseBox.style.display = "block";
-  responseBox.innerHTML = `<button class="copy-btn" onclick="copyResponse()">نسخ الرد</button>\n⏳ جاري الإرسال...`;
+  responseBox.innerHTML = `<button class="copy-btn" onclick="copyResponse()">نسخ الرد</button>\n<span id="loadingIcon">⏳</span>`;
+
+  let countdown = 10;
+  const loadingIcon = document.getElementById("loadingIcon");
+  const timer = setInterval(() => {
+    if (countdown > 0) {
+      loadingIcon.textContent = countdown;
+      countdown--;
+    } else {
+      loadingIcon.textContent = "⏳";
+    }
+  }, 1000);
 
   const apiUrl = "https://yojagahyhoogwtfpvtok.supabase.co/functions/v1/api-chat";
   const apiKey = "wgpt_274mcgyt1rurpp5cfqh4xc";
@@ -235,20 +249,26 @@ sendBtn.addEventListener("click", async function () {
   try {
     const res = await fetch(`${apiUrl}?message=${encodeURIComponent(message)}&key=${apiKey}&format=${format}`);
     const rawText = await res.text();
+    clearInterval(timer);
     let data;
     try { data = JSON.parse(rawText); } catch {
-      responseBox.innerHTML = `<button class="copy-btn" onclick="copyResponse()">نسخ الرد</button>\n⚠️ الرد غير منسق JSON:\n${rawText}`;
+      loadingIcon.style.display = "none";
+      responseBox.innerHTML += `\n⚠️ الرد غير منسق JSON:\n${rawText}`;
       return;
     }
 
+    loadingIcon.style.display = "none";
     if (data.success) {
       const finalText = `${data.response}\n\nالهاكرز بسام عمارة\n📞 الدعم: @am_an12`;
-      responseBox.innerHTML = `<button class="copy-btn" onclick="copyResponse()">نسخ الرد</button>\n${finalText}`;
+      responseBox.innerHTML += `\n${finalText}`;
     } else {
-      responseBox.innerHTML = `<button class="copy-btn" onclick="copyResponse()">نسخ الرد</button>\n❌ خطأ: ${data.error}\n\nالهاكرز بسام عمارة\n📞 الدعم: @am_an12`;
+      responseBox.innerHTML += `\n❌ خطأ: ${data.error}\n\nالهاكرز بسام عمارة\n📞 الدعم: @am_an12`;
     }
+
   } catch (error) {
-    responseBox.innerHTML = `<button class="copy-btn" onclick="copyResponse()">نسخ الرد</button>\n⚠️ فشل الاتصال: ${error.message}`;
+    clearInterval(timer);
+    loadingIcon.style.display = "none";
+    responseBox.innerHTML += `\n⚠️ فشل الاتصال: ${error.message}`;
   }
 });
 
